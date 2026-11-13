@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Logistics</title>
+  <meta name="description" content="Open Logistics or add it to your Home Screen.">
+  <meta name="theme-color" content="#A8D8F0">
+  <meta name="apple-mobile-web-app-title" content="Logistics">
+  <!--
+    Do not use standalone / apple-mobile-web-app-capable=yes.
+    Google sign-in for the Apps Script app can fail or get stuck inside
+    an iOS Home Screen web app (WKWebView). display:browser plus this
+    "no" value keeps iOS 16–18 shortcuts in Safari. On iOS 26, turn off
+    "Open as Web App" when adding the icon (instructions below).
+  -->
+  <meta name="apple-mobile-web-app-capable" content="no">
+  <meta name="mobile-web-app-capable" content="no">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    :root {
+      --blue: #A8D8F0;
+      --navy: #0B2545;
+      --navy-soft: rgba(11, 37, 69, 0.72);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: var(--blue);
+      color: var(--navy);
+      font-family: system-ui, -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
+      -webkit-text-size-adjust: 100%;
+    }
+    body {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px calc(32px + env(safe-area-inset-bottom));
+    }
+    main {
+      width: 100%;
+      max-width: 390px;
+      text-align: center;
+    }
+    .icon {
+      width: 180px;
+      height: 180px;
+      border-radius: 22.37%;
+      display: block;
+      margin: 0 auto 28px;
+      background: var(--blue);
+      box-shadow: 0 10px 28px rgba(11, 37, 69, 0.18);
+    }
+    h1 {
+      margin: 0 0 28px;
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .open {
+      display: block;
+      width: 100%;
+      padding: 16px 20px;
+      border: 0;
+      border-radius: 14px;
+      background: var(--navy);
+      color: #fff;
+      font: inherit;
+      font-size: 1.125rem;
+      font-weight: 700;
+      text-decoration: none;
+      text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .open:active { transform: scale(0.98); }
+    .status {
+      display: none;
+      margin: 0 0 20px;
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+    .hint {
+      display: none;
+      margin: 16px 0 0;
+      font-size: 0.95rem;
+      color: var(--navy-soft);
+    }
+    .howto {
+      margin: 36px 0 0;
+      padding: 0;
+      text-align: left;
+      color: var(--navy);
+    }
+    .howto h2 {
+      margin: 0 0 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--navy-soft);
+    }
+    .howto ol {
+      margin: 0;
+      padding: 0 0 0 1.2em;
+    }
+    .howto li {
+      margin: 0 0 10px;
+      line-height: 1.45;
+      font-size: 0.98rem;
+    }
+    .howto li:last-child { margin-bottom: 0; }
+    body.redirecting .howto,
+    body.redirecting .open,
+    body.redirecting h1 { display: none; }
+    body.redirecting .status { display: block; }
+    body.standalone .hint { display: block; }
+    noscript p { margin: 16px 0 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <img class="icon" src="apple-touch-icon.png" width="180" height="180" alt="Logistics icon">
+    <p class="status" id="status">Opening Logistics…</p>
+    <h1>Logistics</h1>
+    <a class="open" id="open" href="https://script.google.com/macros/s/AKfycbwInhnOZNbRpAF9yoNk62oWoM6NppSqbKJkgbnHWVdjynFjjayTr6O0KZNtwT_E7CaAKg/exec" rel="noopener noreferrer">Open Logistics</a>
+    <p class="hint" id="hint">Tap Open Logistics to continue in Safari. That keeps Google sign-in working.</p>
+    <section class="howto" aria-labelledby="howto-title">
+      <h2 id="howto-title">Add to Home Screen</h2>
+      <ol>
+        <li>Tap the Share button (the square with the arrow).</li>
+        <li>Tap <strong>Add to Home Screen</strong>.</li>
+        <li>If you see <strong>Open as Web App</strong>, turn it off so the icon opens in Safari and sign-in works.</li>
+        <li>Name it <strong>Logistics</strong> and tap <strong>Add</strong>.</li>
+      </ol>
+    </section>
+    <noscript>
+      <p><a href="https://script.google.com/macros/s/AKfycbwInhnOZNbRpAF9yoNk62oWoM6NppSqbKJkgbnHWVdjynFjjayTr6O0KZNtwT_E7CaAKg/exec">Open Logistics</a></p>
+    </noscript>
+  </main>
+  <script>
+    (function () {
+      var APP = "https://script.google.com/macros/s/AKfycbwInhnOZNbRpAF9yoNk62oWoM6NppSqbKJkgbnHWVdjynFjjayTr6O0KZNtwT_E7CaAKg/exec";
+      var fromHome = new URLSearchParams(location.search).get("launch") === "1";
+      var standalone = window.navigator.standalone === true ||
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.matchMedia("(display-mode: fullscreen)").matches ||
+        window.matchMedia("(display-mode: minimal-ui)").matches;
+
+      if (standalone) {
+        document.body.classList.add("standalone");
+        var open = document.getElementById("open");
+        if (open) open.setAttribute("target", "_blank");
+      }
+
+      // Auto-redirect only from the Home Screen start URL, and only when
+      // this page is running in normal Safari. In standalone mode a
+      // navigation to script.google.com can stay inside a WKWebView and
+      // break Google sign-in, so we leave the button on screen instead.
+      if (fromHome && !standalone) {
+        document.body.classList.add("redirecting");
+        location.replace(APP);
+      }
+    })();
+  </script>
+</body>
+</html>
