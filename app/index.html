@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; media-src 'self' blob:; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Logistics</title>
+  <meta name="theme-color" content="#0d171c">
+  <meta name="color-scheme" content="dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Logistics">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="shell.css">
+</head>
+<body>
+  <div id="auth" class="auth" hidden>
+    <main class="auth-card">
+      <img class="auth-icon" src="icon-192.png" alt="" width="96" height="96">
+      <h1>Logistics</h1>
+      <p class="auth-sub" id="auth-sub">Sign in with the email your manager added.</p>
+
+      <form id="auth-email-form" class="auth-form" novalidate>
+        <label for="auth-email">Email</label>
+        <input id="auth-email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" required>
+        <button class="primary full" type="submit" id="auth-send">Email me a code</button>
+      </form>
+
+      <form id="auth-code-form" class="auth-form" novalidate hidden>
+        <label for="auth-code">6-digit code</label>
+        <input id="auth-code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
+        <button class="primary full" type="submit" id="auth-verify">Sign in</button>
+        <div class="auth-links">
+          <button type="button" class="ghost" id="auth-resend">Send a new code</button>
+          <button type="button" class="ghost" id="auth-change">Use a different email</button>
+        </div>
+      </form>
+
+      <p class="auth-msg" id="auth-msg" role="status" aria-live="polite"></p>
+    </main>
+  </div>
+  <div id="app"></div>
+  <div id="print-root"></div>
+  <script src="config.js"></script>
+  <script src="libs.js"></script>
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+  <script src="boot.js"></script>
+</body>
+</html>
