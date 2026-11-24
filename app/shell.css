@@ -1,27 +1,51 @@
-/* Sign-in screen and full-screen tweaks. Night ledger colors come from app.css. */
+/*
+ * Sign-in screen, People screen, and full-screen tweaks.
+ * Colors are the exact v19 Night ledger values from app.css:
+ *   page   --bg #0d171c   panels --surface #15232a   accent #77e0b3
+ *   greens #1e4d3a (v19 brand and theme color)   #132e28 + #44886e (v19 green panel)   #1c362e (active row)
+ */
+:root { --safe-t: env(safe-area-inset-top, 0px); --brand-green: #1e4d3a; --panel-green: #132e28; --panel-green-line: #44886e; }
 html, body { background: var(--bg); }
-body { padding-top: env(safe-area-inset-top); overscroll-behavior-y: none; }
-.auth[hidden], #app[hidden] { display: none !important; }
-.auth { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px 20px calc(24px + env(safe-area-inset-bottom)); }
-.auth-card { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px 22px; text-align: center; }
+body { padding-top: var(--safe-t); overscroll-behavior-y: none; }
+/* Full-screen on iPhone: the status bar area is v19's brand green, like the bar Safari used to tint. */
+body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: var(--safe-t); background: var(--brand-green); z-index: 200; pointer-events: none; }
+
+.auth[hidden], #app[hidden], .people[hidden] { display: none !important; }
+.auth { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px 20px calc(24px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, var(--brand-green) 0, var(--bg) 340px); }
+.auth-card { width: 100%; max-width: 400px; background: var(--panel-green); border: 1px solid var(--panel-green-line); border-radius: 16px; padding: 28px 22px; text-align: center; }
 .auth-icon { width: 96px; height: 96px; border-radius: 22.37%; display: block; margin: 0 auto 16px; }
 .auth h1 { margin: 0 0 6px; font-size: 26px; letter-spacing: -0.01em; }
 .auth-sub { margin: 0 0 22px; color: var(--muted); }
 .auth-form { display: grid; gap: 10px; text-align: left; }
 .auth-form[hidden] { display: none; }
 .auth-form label { font-size: 13px; font-weight: 650; color: var(--muted); }
-.auth-form input { width: 100%; min-height: 50px; padding: 0 14px; font-size: 18px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.auth-form input { width: 100%; min-height: 50px; padding: 0 14px; font-size: 18px; border-radius: 10px; border: 1px solid var(--panel-green-line); background: var(--bg); color: var(--ink); }
 #auth-code { font-size: 28px; letter-spacing: 0.35em; text-align: center; font-variant-numeric: tabular-nums; }
 .auth-form .primary { min-height: 50px; margin-top: 6px; }
 .auth-links { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .auth-links .ghost { background: none; border: 0; color: var(--accent); padding: 10px 0; font-size: 15px; }
 .auth-msg { min-height: 1.4em; margin: 16px 0 0; color: var(--muted); }
 .auth-msg.error { color: var(--out); }
+
 .account-card { margin-top: 18px; }
 .account-card .who { word-break: break-all; }
-body.role-counter [data-action="add-item"],
-body.role-counter [data-action="edit-item"],
-body.role-counter [data-action="archive-ask"],
-body.role-counter [data-action="save-threshold"],
-body.role-counter [data-action="paste-url"],
-body.role-counter .add-bar:empty { display: none !important; }
+.account-card .secondary { margin-top: 8px; }
+
+/* People screen (Managers) */
+body.people-open { overflow: hidden; }
+.people { position: fixed; inset: 0; z-index: 100; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; padding-top: var(--safe-t); }
+.people-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.people-head h1 { margin: 0; font-size: 20px; }
+.people-body { max-width: 640px; margin: 0 auto; padding: 16px 16px calc(40px + env(safe-area-inset-bottom)); display: grid; gap: 12px; }
+.people-add { display: grid; gap: 10px; }
+.people-add h2 { margin: 0; font-size: 18px; }
+.people-add select, .people-add input { width: 100%; min-height: 46px; }
+.people-msg { min-height: 1.4em; margin: 0; color: var(--ok); }
+.people-msg.error { color: var(--out); }
+.people-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.person { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 10px; }
+.person-main { word-break: break-word; }
+.person-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.person-actions .secondary { min-height: 40px; padding: 0 12px; font-size: 14px; }
+.person-actions .secondary.danger { background: var(--out-bg); color: var(--out); border-color: var(--out); }
+.person .badge { display: inline-block; vertical-align: middle; }

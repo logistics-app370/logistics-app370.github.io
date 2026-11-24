@@ -1,7 +1,7 @@
 /* Logistics app shell cache. Only same-origin GET files are cached.
    The data line (script.google.com) is never intercepted or cached. */
 'use strict';
-var VERSION = 'dbc6283ef5';
+var VERSION = 'a5da38a8e3';
 var CACHE = 'logistics-app-' + VERSION;
 var SHELL = [
   './', './index.html', './shell.css', './app.css', './app.js', './libs.js', './api.js', './boot.js',

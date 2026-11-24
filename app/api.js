@@ -13,9 +13,12 @@
   var TIMEOUT_MS = 30000;
   var ACTIONS = {
     getBootstrap: 1, saveCount: 1, setQuantity: 1, markOrdered: 1, markReceived: 1,
-    saveItem: 1, archiveItem: 1, addCategory: 1, setCategoryDefault: 1, addLocation: 1, addUnit: 1, updateVendor: 1
+    saveItem: 1, archiveItem: 1, addCategory: 1, setCategoryDefault: 1, addLocation: 1, addUnit: 1, updateVendor: 1,
+    listUsers: 1, addUser: 1, removeUser: 1, signOutUser: 1, setUserRole: 1
   };
+  var REFRESH_AFTER_MS = 45000;
   var started = false;
+  var lastBootAt = 0;
 
   // Deep link: ?item=ITM-1234 opens that item (same as the printed labels).
   (function () {
@@ -38,7 +41,7 @@
   }
   function applyRole() {
     var w = who();
-    document.body.classList.toggle('role-counter', !!w && w.role !== 'Manager');
+    document.body.classList.toggle('role-manager', !!w && w.role === 'Manager');
   }
 
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
@@ -83,6 +86,7 @@
         throw new Error('Please sign in again.');
       }
       if (res && res.who) setWho(res.who);
+      if (name === 'getBootstrap' && res && res.ok !== false) lastBootAt = Date.now();
       return res;
     });
   }
@@ -178,19 +182,28 @@
     });
     $('auth-change').addEventListener('click', function () { showSignIn(''); $('auth-email').focus(); });
     document.addEventListener('click', function (e) {
-      var node = e.target && e.target.closest ? e.target.closest('[data-action="sign-out"]') : null;
+      var node = e.target && e.target.closest ? e.target.closest('[data-action="sign-out"], [data-action="open-people"]') : null;
       if (!node) return;
       e.preventDefault();
       e.stopPropagation();
-      signOut();
+      if (node.getAttribute('data-action') === 'open-people') openPeople();
+      else signOut();
     }, true);
+    // Coming back to the app after a while: show what is saved, refresh quietly.
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState !== 'visible' || !started || !token()) return;
+      if (Date.now() - lastBootAt > REFRESH_AFTER_MS && window.LogisticsApp) window.LogisticsApp.refresh();
+    });
+    window.addEventListener('online', function () {
+      if (started && token() && window.LogisticsApp) window.LogisticsApp.refresh();
+    });
   }
 
   function signOutLocal() {
     store(TOKEN_KEY, null);
     store(WHO_KEY, null);
     store(BOOT_KEY, null);
-    document.body.classList.remove('role-counter');
+    document.body.classList.remove('role-manager');
   }
 
   function signOut() {
@@ -218,12 +231,151 @@
     });
   }
 
+
+  // ------------------------------------------------------------ People (Managers)
+
+  var people = { users: [], max: 60, loading: false, busy: false, confirm: '', msg: '', error: false };
+
+  function peopleEl() {
+    var el = document.getElementById('people');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'people';
+    el.className = 'people';
+    el.hidden = true;
+    el.addEventListener('click', onPeopleClick);
+    el.addEventListener('submit', onPeopleSubmit);
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function openPeople() {
+    people.confirm = '';
+    people.msg = '';
+    peopleEl().hidden = false;
+    document.body.classList.add('people-open');
+    renderPeople();
+    people.loading = true;
+    run('listUsers', {}).then(function (res) {
+      people.loading = false;
+      if (res && res.ok) { people.users = res.users || []; people.max = res.max || 60; }
+      else { people.msg = (res && res.error) || 'Could not load the list.'; people.error = true; }
+      renderPeople();
+    }).catch(function (err) {
+      people.loading = false;
+      people.msg = err.message || String(err);
+      people.error = true;
+      renderPeople();
+    });
+  }
+
+  function closePeople() {
+    peopleEl().hidden = true;
+    document.body.classList.remove('people-open');
+  }
+
+  function renderPeople() {
+    var el = peopleEl();
+    var rows = people.users.map(function (u) {
+      var label = u.name ? esc(u.name) : esc(u.email);
+      var meta = (u.name ? esc(u.email) + ' · ' : '') + (u.devices ? u.devices + (u.devices === 1 ? ' phone' : ' phones') : 'not signed in') +
+        (u.lastActive ? ' · last active ' + esc(u.lastActive.slice(0, 10)) : '');
+      var badges = (u.owner ? '<span class="badge ok">Owner</span> ' : '') + (u.role === 'Manager' ? '<span class="badge ordered">Manager</span> ' : '') + (u.you ? '<span class="badge uncounted">You</span>' : '');
+      var email = esc(u.email);
+      function btn(kind, text, confirmText) {
+        var key = kind + ':' + u.email;
+        var asking = people.confirm === key;
+        return '<button type="button" class="secondary' + (asking ? ' danger' : '') + '" data-people="' + kind + '" data-email="' + email + '"' + (people.busy ? ' disabled' : '') + '>' + (asking ? confirmText : text) + '</button>';
+      }
+      var actions = '';
+      if (!u.owner) {
+        actions += '<button type="button" class="secondary" data-people="role" data-email="' + email + '" data-role="' + (u.role === 'Manager' ? 'User' : 'Manager') + '"' + (people.busy ? ' disabled' : '') + '>' + (u.role === 'Manager' ? 'Make coworker' : 'Make manager') + '</button>';
+      }
+      actions += btn('signout', 'Sign out', 'Tap again to sign out');
+      if (!u.owner && !u.you) actions += btn('remove', 'Remove', 'Tap again to remove');
+      return '<li class="person"><div class="person-main"><strong>' + label + '</strong> ' + badges + '<div class="hint">' + meta + '</div></div><div class="person-actions">' + actions + '</div></li>';
+    }).join('');
+    el.innerHTML =
+      '<div class="people-head"><button type="button" class="back" data-people="close" aria-label="Back">←</button><h1>People</h1></div>' +
+      '<div class="people-body">' +
+        '<p class="hint">Everyone on this list can count, mark orders, and add or edit items. Managers can also add and remove people. Adding someone does not send them an email. Tell them to open the app and enter their email.</p>' +
+        '<form class="card people-add" id="people-add" novalidate><h2>Add a coworker</h2>' +
+          '<div class="field"><label for="people-name">Name</label><input id="people-name" autocomplete="off" maxlength="60" placeholder="First and last name"></div>' +
+          '<div class="field"><label for="people-email">Email</label><input id="people-email" type="email" inputmode="email" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="Their email address"></div>' +
+          '<div class="field"><label for="people-role">Can</label><select id="people-role"><option value="User">Count, order, and edit items</option><option value="Manager">Also manage people (Manager)</option></select></div>' +
+          '<button class="primary full" type="submit"' + (people.busy ? ' disabled' : '') + '>Add person</button></form>' +
+        '<p class="people-msg' + (people.error ? ' error' : '') + '" role="status" aria-live="polite">' + esc(people.msg) + '</p>' +
+        '<h2 class="group-title">' + (people.loading ? 'Loading…' : people.users.length + ' of ' + people.max + ' people') + '</h2>' +
+        '<ul class="people-list">' + rows + '</ul>' +
+      '</div>';
+  }
+
+  function peopleCall(action, payload, doneMsg) {
+    people.busy = true;
+    people.msg = '';
+    people.error = false;
+    renderPeople();
+    return run(action, payload).then(function (res) {
+      people.busy = false;
+      if (res && res.ok) {
+        people.users = res.users || people.users;
+        people.msg = typeof doneMsg === 'function' ? doneMsg(res) : doneMsg;
+        people.error = false;
+        return true;
+      }
+      people.msg = (res && res.error) || 'That did not work.';
+      people.error = true;
+      return false;
+    }).catch(function (err) {
+      people.busy = false;
+      people.msg = err.message || String(err);
+      people.error = true;
+      return false;
+    }).then(function (ok) { renderPeople(); return ok; });
+  }
+
+  function onPeopleSubmit(e) {
+    if (!e.target || e.target.id !== 'people-add') return;
+    e.preventDefault();
+    var email = document.getElementById('people-email').value.trim().toLowerCase();
+    var name = document.getElementById('people-name').value.trim();
+    var role = document.getElementById('people-role').value;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { people.msg = 'Enter their email address.'; people.error = true; renderPeople(); return; }
+    if (!name) { people.msg = 'Add their name so the activity log is easy to read.'; people.error = true; renderPeople(); return; }
+    peopleCall('addUser', { email: email, name: name, role: role }, 'Added ' + name + '.');
+  }
+
+  function onPeopleClick(e) {
+    var node = e.target && e.target.closest ? e.target.closest('[data-people]') : null;
+    if (!node || node.disabled) return;
+    var kind = node.getAttribute('data-people');
+    var email = node.getAttribute('data-email') || '';
+    if (kind === 'close') { closePeople(); return; }
+    if (kind === 'role') {
+      people.confirm = '';
+      var role = node.getAttribute('data-role');
+      peopleCall('setUserRole', { email: email, role: role }, role === 'Manager' ? 'Now a manager.' : 'Now a coworker.');
+      return;
+    }
+    var key = kind + ':' + email;
+    if (people.confirm !== key) { people.confirm = key; renderPeople(); return; }
+    people.confirm = '';
+    if (kind === 'signout') {
+      peopleCall('signOutUser', { email: email }, function (res) {
+        return 'Signed out ' + (res.revoked || 0) + (res.revoked === 1 ? ' phone.' : ' phones.');
+      });
+    } else if (kind === 'remove') {
+      peopleCall('removeUser', { email: email }, 'Removed. They are signed out and cannot sign in again.');
+    }
+  }
+
   window.LogisticsApi = {
     run: run,
     accountHtml: function () {
       var w = who() || {};
-      return '<div class="card account-card"><h2>Signed in</h2><p class="who">' + esc(w.email || '') +
-        (w.role ? ' · ' + esc(w.role) : '') + '</p><p class="hint">This phone stays signed in for about 90 days.</p>' +
+      return '<div class="card account-card"><h2>Signed in</h2><p class="who">' + esc(w.name ? w.name + ' · ' : '') + esc(w.email || '') +
+        (w.role === 'Manager' ? ' · Manager' : '') + '</p><p class="hint">This phone stays signed in for about 90 days.</p>' +
+        (w.role === 'Manager' ? '<button class="secondary full" data-action="open-people">People</button>' : '') +
         '<button class="secondary full" data-action="sign-out">Sign out</button></div>';
     },
     boot: function () {

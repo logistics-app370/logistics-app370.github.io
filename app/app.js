@@ -165,7 +165,7 @@
     el.hidden = !message;
     el.textContent = message || '';
     clearTimeout(toast.timer);
-    if (message) toast.timer = setTimeout(function () { toast(''); }, 3200);
+    if (message) toast.timer = setTimeout(function () { toast(''); }, /not saved|could not|no connection|try again|sign in/i.test(message) ? 7000 : 3200);
   }
   function applyLists(lists) {
     if (!lists) return;
@@ -1224,7 +1224,7 @@
     else if (action === 'paste-url') pasteIntoItem(id);
     else if (action === 'paste-draft-url') pasteIntoDraft();
     else if (action === 'clear-review') clearReview(id);
-    else if (action === 'archive-ask') state.overlay = { type: 'confirm', title: 'Archive this item?', body: 'It stays on the sheet and leaves the counting list.', confirmLabel: 'Archive', yes: function () { return archive(id, true); } };
+    else if (action === 'archive-ask') { var wasArchived = !!(findItem(id) || {}).archived; state.overlay = { type: 'confirm', title: wasArchived ? 'Restore this item?' : 'Archive this item?', body: wasArchived ? 'It goes back on the counting list.' : 'It stays on the sheet and leaves the counting list.', confirmLabel: wasArchived ? 'Restore' : 'Archive', yes: function () { return archive(id, !wasArchived); } }; }
     else if (action === 'confirm-yes' && state.overlay && state.overlay.yes) state.overlay.yes();
     else if (action === 'close-overlay') { state.overlay = null; renderOverlay(); }
     else if (action === 'order-open') openOrder(node.getAttribute('data-vendor'));
@@ -1513,6 +1513,7 @@
     var current = item.quantity == null ? 0 : Number(item.quantity);
     if (action === 'qty-dec' && item.quantity == null) return;
     var next = action === 'qty-inc' ? current + 1 : Math.max(0, current - 1);
+    beginMutation(item);
     item.quantity = next;
     item.lastCountedAt = (state.today || clientToday()) + ' 12:00';
     applyLocalStatus(item);
@@ -1531,16 +1532,23 @@
     if (!pending) return;
     var sent = pending.value;
     runServer('setQuantity', { id: id, quantity: sent }).then(function (res) {
-      if (!res || res.ok === false) return toast(res && res.error || 'Could not save the count');
+      if (!res || res.ok === false) throw new Error(res && res.error || 'Could not save the count');
       if (!qtyQueue[id] || qtyQueue[id].value === sent) {
-        mergeItem(res.item);
         delete qtyQueue[id];
-        persistBootCache();
+        endMutation(id, res.item);
         renderMain();
         renderPanel();
         renderSidebar();
       }
-    }).catch(function (err) { toast(err.message); });
+    }).catch(function (err) {
+      if (qtyQueue[id]) { clearTimeout(qtyQueue[id].timer); delete qtyQueue[id]; }
+      revertMutation(id);
+      persistBootCache();
+      toast('Not saved. ' + (err && err.message ? err.message : 'Try again.'));
+      renderMain();
+      renderPanel();
+      renderSidebar();
+    });
   }
   function saveDraft() {
     var draft = state.draft;
