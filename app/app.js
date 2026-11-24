@@ -1302,7 +1302,7 @@
     if (kind === 'count-place') {
       state.locations.forEach(function (name) { rows.push({ label: name, value: name }); });
     } else if (kind === 'category') {
-      state.categories.forEach(function (cat) { rows.push({ label: cat.name, value: cat.name, hint: cat.defaultLocation }); });
+      state.categories.forEach(function (cat) { rows.push({ label: cat.name, value: cat.name }); });
     } else if (kind === 'branch') {
       state.branches.forEach(function (name) { rows.push({ label: name, value: name }); });
     }
